@@ -11,6 +11,7 @@
 #include "fonts_GLCD.h"
 
 #define RUSSIAN_CHARSET 0xC0
+#define SPACE 2
 
 typedef struct {
 	uint16_t height;
@@ -22,42 +23,38 @@ typedef enum _TColor {
 	clBlack = 0x0000, clWhite = 0xFFFF
 } TColor;
 
-enum {
-	extra_space = 10
-};
-
 TBitmapText MakeTextBitmap(const char *text, const FontGLCD_t* font,
-		TColor text_color, TColor bg_color);
+		TColor text_color, TColor bg_color, uint8_t extra_space);
 
 void PrintAndFree(TBitmapText bmp);
 
 int main() {
 	TBitmapText bmp;
-	bmp = MakeTextBitmap("ABCDE", &Consolas9x16, clBlack, clWhite);
+	bmp = MakeTextBitmap("ABCDE", &Consolas9x16, clBlack, clWhite,SPACE);
 	PrintAndFree(bmp);
-	bmp = MakeTextBitmap("ABCDE", &Courier_New_Bold16x26, clBlack, clWhite);
+	bmp = MakeTextBitmap("ABCDE", &Courier_New_Bold16x26, clBlack, clWhite,SPACE);
 	PrintAndFree(bmp);
-	bmp = MakeTextBitmap("ABCDE", &ISOCPEUR19x35, clBlack,clWhite);
+	bmp = MakeTextBitmap("ABCDE", &ISOCPEUR19x35, clBlack,clWhite,SPACE);
 	PrintAndFree(bmp);
-	bmp = MakeTextBitmap("ABCDEFGH 123wesq", &Consolas9x16, clBlack,clWhite);
+	bmp = MakeTextBitmap("ABCDEFGH 123wesq", &Consolas9x16, clBlack,clWhite,SPACE);
 	PrintAndFree(bmp);
-	bmp = MakeTextBitmap("ABCDEFGH 123wesq", &Courier_New_Bold16x26, clBlack,clWhite);
+	bmp = MakeTextBitmap("ABCDEFGH 123wesq", &Courier_New_Bold16x26, clBlack,clWhite,SPACE);
 	PrintAndFree(bmp);
-	bmp = MakeTextBitmap("ABCDEFGH 123wesq", &ISOCPEUR19x35, clBlack,clWhite);
+	bmp = MakeTextBitmap("ABCDEFGH 123wesq", &ISOCPEUR19x35, clBlack,clWhite,SPACE);
 	PrintAndFree(bmp);
-	bmp = MakeTextBitmap("–ус— »й test 123", &Consolas9x16, clBlack,clWhite);	;
+	bmp = MakeTextBitmap("–ус— »й test 123", &Consolas9x16, clBlack,clWhite,SPACE);
 	PrintAndFree(bmp);
-	bmp = MakeTextBitmap("–ус— »й test 123", &Courier_New_Bold16x26, clBlack,clWhite);
+	bmp = MakeTextBitmap("–ус— »й test 123", &Courier_New_Bold16x26, clBlack,clWhite,SPACE);
 	PrintAndFree(bmp);
-	bmp = MakeTextBitmap("–ус— »й test 123", &ISOCPEUR19x35, clBlack,clWhite);
+	bmp = MakeTextBitmap("–ус— »й test 123", &ISOCPEUR19x35, clBlack,clWhite,SPACE);
 	PrintAndFree(bmp);
-	bmp = MakeTextBitmap("ƒлинна€-предлинна€ строка!", &Consolas9x16, clBlack,clWhite);
+	bmp = MakeTextBitmap("ƒлинна€-предлинна€ строка!", &Consolas9x16, clBlack,clWhite,SPACE);
 	PrintAndFree(bmp);
-	bmp = MakeTextBitmap("ƒлинна€-предлинна€ строка!", &Courier_New_Bold16x26, clBlack,clWhite);
+	bmp = MakeTextBitmap("ƒлинна€-предлинна€ строка!", &Courier_New_Bold16x26, clBlack,clWhite,SPACE);
 	PrintAndFree(bmp);
-	bmp = MakeTextBitmap("ƒлинна€-предлинна€ строка!", &ISOCPEUR19x35, clBlack,clWhite);
+	bmp = MakeTextBitmap("ƒлинна€-предлинна€ строка!", &ISOCPEUR19x35, clBlack,clWhite,SPACE);
 	PrintAndFree(bmp);
-	bmp = MakeTextBitmap("ƒлинна€-предлинна€ строка!", &Comic_Sans_MS20x24, clBlack,clWhite);
+	bmp = MakeTextBitmap("ƒлинна€-предлинна€ строка!", &Comic_Sans_MS20x24, clBlack,clWhite,SPACE);
 		PrintAndFree(bmp);
 //	bmp = draw_text(" ", &RFM_hearts32x32, clWhite,clBlack);
 
@@ -65,7 +62,7 @@ int main() {
 }
 
 TBitmapText MakeTextBitmap(const char *text, const FontGLCD_t* font, TColor color,
-		TColor bg_color) {
+		TColor bg_color, uint8_t extra_space) {
 	TBitmapText ret;
 
 	int bytes_per_column = font->FontHeight / 8 // эти вычислени€ надо бы сделать константами в параметрах шрифта
@@ -83,7 +80,7 @@ TBitmapText MakeTextBitmap(const char *text, const FontGLCD_t* font, TColor colo
 				chars_table = font->data_regular;
 				char_index = ((uint8_t)text[i] - font->TableOffset) * bytes_per_char;	// индекс символа в массиве шрифтов
 			}
-		ret.width += (font->isMono ?font->FontWidth :chars_table[char_index] + extra_space);
+		ret.width += (font->isMono ?font->FontWidth+extra_space :chars_table[char_index] + extra_space);
 	}
 	/*
 	 * двумерный динамически массив не подходит, потому что содержит в себе массив указателей и требует больше пам€ти дл€ них,
@@ -130,7 +127,6 @@ TBitmapText MakeTextBitmap(const char *text, const FontGLCD_t* font, TColor colo
 			col_index += bytes_per_column;
 		}
 		stolb_idx += char_width;
-		if (font->isMono) continue; // если шрифт моноширинный - добавл€ть пространство не нужно
 		for (int stolb = 0; stolb < extra_space; stolb++) {// дополнительное пространство между символами
 					for (int stroka = 0; stroka < font->FontHeight; stroka++) { // проход по байтам столбца
 							uint32_t buf_idx =	stroka * ret.width +
