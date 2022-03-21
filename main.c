@@ -19,17 +19,23 @@ typedef struct {
 	void* data;
 } TBitmapText;
 
-typedef enum _TColor {
+typedef enum _EColor {
 	clBlack = 0x0000, clWhite = 0xFFFF
-} TColor;
+} EColor;
 
-TBitmapText MakeTextBitmap(const char *text, const FontGLCD_t* font,
-		TColor text_color, TColor bg_color, uint8_t extra_space);
+typedef struct _TDrawConfig {
+	EColor TextColor;
+	EColor BackColor;
+	uint8_t ExtraSpace;
+} TDrawConfig;
 
-void PrintAndFree(TBitmapText bmp);
+TBitmapText* MakeTextBitmap(const char *text, const FontGLCD_t* font,
+		EColor text_color, EColor bg_color, uint8_t extra_space);
+
+void PrintAndFree(TBitmapText* bmp);
 
 int main() {
-	TBitmapText bmp;
+	TBitmapText* bmp;
 	bmp = MakeTextBitmap("ABCDE", &Consolas9x16, clBlack, clWhite,SPACE);
 	PrintAndFree(bmp);
 	bmp = MakeTextBitmap("ABCDE", &Courier_New_Bold16x26, clBlack, clWhite,SPACE);
@@ -61,17 +67,17 @@ int main() {
 	return 0;
 }
 
-TBitmapText MakeTextBitmap(const char *text, const FontGLCD_t* font, TColor color,
-		TColor bg_color, uint8_t extra_space) {
-	TBitmapText ret;
+TBitmapText* MakeTextBitmap(const char *text, const FontGLCD_t* font, EColor color,
+		EColor bg_color, uint8_t extra_space) {
+	TBitmapText* ret = malloc(sizeof(TBitmapText));
 
 	int bytes_per_column = font->FontHeight / 8 // эти вычисления надо бы сделать константами в параметрах шрифта
 			+ (font->FontHeight % 8 ? 1 : 0); // количество байт на 1 столбец символа
 	int bytes_per_char = font->FontWidth * bytes_per_column + 1; // количество байт на символ
 	int char_index;							// индекс символа в массиве шрифта
 	const uint8_t* chars_table;				// таблица символов, в шрифте их две
-	ret.height = font->FontHeight;
-	ret.width = 0;
+	ret->height = font->FontHeight;
+	ret->width = 0;
 	for (int i = 0; text[i]; i++) { // проход по тексту и вычисление ширины битмапы
 		if ((uint8_t)text[i] >= RUSSIAN_CHARSET) {		//проверка языка
 				chars_table = font->data_ru;
@@ -80,7 +86,7 @@ TBitmapText MakeTextBitmap(const char *text, const FontGLCD_t* font, TColor colo
 				chars_table = font->data_regular;
 				char_index = ((uint8_t)text[i] - font->TableOffset) * bytes_per_char;	// индекс символа в массиве шрифтов
 			}
-		ret.width += (font->isMono ?font->FontWidth+extra_space :chars_table[char_index] + extra_space);
+		ret->width += (font->isMono ?font->FontWidth+extra_space :chars_table[char_index] + extra_space);
 	}
 	/*
 	 * двумерный динамически массив не подходит, потому что содержит в себе массив указателей и требует больше памяти для них,
@@ -91,15 +97,15 @@ TBitmapText MakeTextBitmap(const char *text, const FontGLCD_t* font, TColor colo
 	 *	*(*(buf+i)+j) = 0xAC; эквивалент buf[i][j] =
 	 *
 	 * */
-	uint16_t *buf = malloc(ret.height * ret.width * sizeof(uint16_t)); // выделение памяти под битмапу
+	uint16_t *buf = malloc(ret->height * ret->width * sizeof(uint16_t)); // выделение памяти под битмапу
 
-	for (int i = 0; i < ret.height; i++) {
-		for (int j = 0; j < ret.width; j++) {
-			buf[i * ret.width + j] = 0xAC35; // имитация мусора из кучи
+	for (int i = 0; i < ret->height; i++) {
+		for (int j = 0; j < ret->width; j++) {
+			buf[i * ret->width + j] = 0xAC35; // имитация мусора из кучи
 		}
 	}
 
-	ret.data = buf;
+	ret->data = buf;
 	int stolb_idx = 0;
 	for (int simv = 0; text[simv]; simv++) { // проход по символам
 		if ((uint8_t)text[simv] >= 0xC0) {		//проверка языка
@@ -116,8 +122,8 @@ TBitmapText MakeTextBitmap(const char *text, const FontGLCD_t* font, TColor colo
 				int x = chars_table[col_index + bait]; // байт, который будет сейчас выводиться
 				int bit_count = font->FontHeight - bait * 8 >= 8 ? 8 : font->FontHeight % 8; // кол-во используемых бит
 				for (int bit = 0; bit < bit_count; bit++) {	// проход по битам
-					uint32_t buf_idx = 	bit * ret.width +
-										bait * 8 * ret.width +
+					uint32_t buf_idx = 	bit * ret->width +
+										bait * 8 * ret->width +
 										stolb_idx +
 										stolb;
 					buf[buf_idx] = (x & 0b1) ? color : bg_color;
@@ -129,7 +135,7 @@ TBitmapText MakeTextBitmap(const char *text, const FontGLCD_t* font, TColor colo
 		stolb_idx += char_width;
 		for (int stolb = 0; stolb < extra_space; stolb++) {// дополнительное пространство между символами
 					for (int stroka = 0; stroka < font->FontHeight; stroka++) { // проход по байтам столбца
-							uint32_t buf_idx =	stroka * ret.width +
+							uint32_t buf_idx =	stroka * ret->width +
 												stolb_idx +
 												stolb;
 							buf[buf_idx] = bg_color;	//0xad;
@@ -140,14 +146,14 @@ TBitmapText MakeTextBitmap(const char *text, const FontGLCD_t* font, TColor colo
 	return ret;
 }
 
-void PrintAndFree(TBitmapText bmp){
-	printf("H = %d, W = %d\n\n", bmp.height, bmp.width); // fixme повреждается куча
+void PrintAndFree(TBitmapText* bmp){
+	printf("H = %d, W = %d\n\n", bmp->height, bmp->width); // fixme повреждается куча
 
 		int idx = 0;
-		for (int i = 0; i < bmp.height; i++) {
-			for (int j = 0; j < bmp.width; j++) {
+		for (int i = 0; i < bmp->height; i++) {
+			for (int j = 0; j < bmp->width; j++) {
 				//printf("%c", (((uint16_t*) bmp.data)[idx]==clBlack) ? ' ' : '0');
-				switch (((uint16_t*) bmp.data)[idx]) {
+				switch (((uint16_t*) bmp->data)[idx]) {
 				case clBlack:
 					printf("%c", '0');
 					break;
@@ -165,5 +171,6 @@ void PrintAndFree(TBitmapText bmp){
 			fflush(stdout);
 		}
 		printf("\n");
-		free(bmp.data);
+		free(bmp->data);
+		free(bmp);
 }
