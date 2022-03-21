@@ -31,7 +31,7 @@ typedef struct _TDrawConfig {
 
 TBitmapText* MakeTextBitmap(const char *text, const FontGLCD_t* font,
 		EColor text_color, EColor bg_color, uint8_t extra_space);
-
+void FreeTextBitmap(TBitmapText* bitmap);
 void PrintAndFree(TBitmapText* bmp);
 
 int main() {
@@ -61,7 +61,7 @@ int main() {
 	bmp = MakeTextBitmap("Длинная-предлинная строка!", &ISOCPEUR19x35, clBlack,clWhite,SPACE);
 	PrintAndFree(bmp);
 	bmp = MakeTextBitmap("Длинная-предлинная строка!", &Comic_Sans_MS20x24, clBlack,clWhite,SPACE);
-		PrintAndFree(bmp);
+	PrintAndFree(bmp);
 //	bmp = draw_text(" ", &RFM_hearts32x32, clWhite,clBlack);
 
 	return 0;
@@ -146,13 +146,17 @@ TBitmapText* MakeTextBitmap(const char *text, const FontGLCD_t* font, EColor col
 	return ret;
 }
 
+void FreeTextBitmap(TBitmapText* bitmap) {
+	free(bitmap->data);
+	free(bitmap);
+}
+
 void PrintAndFree(TBitmapText* bmp){
 	printf("H = %d, W = %d\n\n", bmp->height, bmp->width); // fixme повреждается куча
 
 		int idx = 0;
 		for (int i = 0; i < bmp->height; i++) {
 			for (int j = 0; j < bmp->width; j++) {
-				//printf("%c", (((uint16_t*) bmp.data)[idx]==clBlack) ? ' ' : '0');
 				switch (((uint16_t*) bmp->data)[idx]) {
 				case clBlack:
 					printf("%c", '0');
@@ -171,6 +175,5 @@ void PrintAndFree(TBitmapText* bmp){
 			fflush(stdout);
 		}
 		printf("\n");
-		free(bmp->data);
-		free(bmp);
+		FreeTextBitmap(bmp);
 }
