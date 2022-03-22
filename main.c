@@ -10,7 +10,6 @@
 #include <stdio.h>
 #include "fonts_GLCD.h"
 
-#define RUSSIAN_CHARSET 0xC0
 #define SPACE 2
 
 typedef struct {
@@ -79,12 +78,12 @@ TBitmapText* MakeTextBitmap(const char *text, const FontGLCD_t* font, EColor col
 	ret->height = font->FontHeight;
 	ret->width = 0;
 	for (int i = 0; text[i]; i++) { // проход по тексту и вычисление ширины битмапы
-		if ((uint8_t)text[i] >= RUSSIAN_CHARSET) {		//проверка языка
+		if ((uint8_t)text[i] >= font->FirstCharRU) {		//проверка языка
 				chars_table = font->data_ru;
-				char_index = ((uint8_t)text[i] - RUSSIAN_CHARSET) * bytes_per_char;// индекс символа в массиве шрифтов
+				char_index = ((uint8_t)text[i] - font->FirstCharRU) * bytes_per_char;// индекс символа в массиве шрифтов
 			} else {
 				chars_table = font->data_regular;
-				char_index = ((uint8_t)text[i] - font->TableOffset) * bytes_per_char;	// индекс символа в массиве шрифтов
+				char_index = ((uint8_t)text[i] - font->FirstChar) * bytes_per_char;	// индекс символа в массиве шрифтов
 			}
 		ret->width += (font->isMono ?font->FontWidth+extra_space :chars_table[char_index] + extra_space);
 	}
@@ -108,12 +107,12 @@ TBitmapText* MakeTextBitmap(const char *text, const FontGLCD_t* font, EColor col
 	ret->data = buf;
 	int stolb_idx = 0;
 	for (int simv = 0; text[simv]; simv++) { // проход по символам
-		if ((uint8_t)text[simv] >= 0xC0) {		//проверка языка
+		if ((uint8_t)text[simv] >= font->FirstCharRU) {		//проверка языка
 						chars_table = font->data_ru;
-						char_index = ((uint8_t)text[simv] - 0xC0) * bytes_per_char;// индекс символа в массиве шрифтов
+						char_index = ((uint8_t)text[simv] - font->FirstCharRU) * bytes_per_char;// индекс символа в массиве шрифтов
 					} else {
 						chars_table = font->data_regular;
-						char_index = ((uint8_t)text[simv] - font->TableOffset) * bytes_per_char;	// индекс символа в массиве шрифтов
+						char_index = ((uint8_t)text[simv] - font->FirstChar) * bytes_per_char;	// индекс символа в массиве шрифтов
 					}
 		int col_index = char_index + 1; // индекс первого столбца символа в массиве шрифта, размером bytes_per_column
 		int char_width = font->isMono ?	font->FontWidth : chars_table[char_index];

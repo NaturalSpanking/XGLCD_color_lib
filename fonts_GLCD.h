@@ -16,8 +16,9 @@
 typedef struct {
 	const unsigned char FontWidth;		// ширина шрифта
 	const unsigned char FontHeight;		// высота шрифта
-	const unsigned char TableOffset;	// смещение первого символа от начала таблицы; обычно 32
 	const unsigned char isMono;			// флаг моноширинного шрифта
+	const unsigned char FirstChar;		// первый основной символ; обычно ' ', 32
+	const unsigned char FirstCharRU;	// первый русский символ; обычно 'A', 0xC0
 	const unsigned char *data_regular;	// указатель на массив основных символов
 	const unsigned char *data_ru;		// указатель на массив русских символов
 } FontGLCD_t;
@@ -25,8 +26,8 @@ typedef struct {
 // Тут перечислить нужные шрифты
 #define CONSOLAS_9X16 		1
 #define COURIER_NEW_16X26	1
-#define RFM_SIGN_24X16		0
-#define RFM_HEARTS_32X32	0
+#define RFM_SIGN_24X16		1
+#define RFM_HEARTS_32X32	1
 #define ISOCPEUR_19X35		1
 #define COMIC_SANS_MS_20X24	1
 
@@ -46,7 +47,7 @@ extern const FontGLCD_t RFM_hearts32x32;
 extern const FontGLCD_t ISOCPEUR19x35;
 #endif
 #if COMIC_SANS_MS_20X24
-const FontGLCD_t Comic_Sans_MS20x24;
+extern const FontGLCD_t Comic_Sans_MS20x24;
 #endif
 
 #endif /* FONTS_GLCD_H_ */
